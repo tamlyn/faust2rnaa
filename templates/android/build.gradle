@@ -13,7 +13,7 @@ if (isNewArchitectureEnabled()) {
 }
 
 android {
-  namespace "com.__CODEGEN_NAME__"
+  namespace "com.faust2rnaa.__CODEGEN_NAME__"
   compileSdkVersion getExtOrDefault("compileSdkVersion", 34)
 
   if (rootProject.ext.has("ndkVersion")) {

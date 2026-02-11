@@ -25,12 +25,12 @@ npx faust2rnaa [-n name] [-o output-dir] <file.dsp | dir/ | file1.dsp file2.dsp 
 **Options:**
 
 - `-n name` — Override the name used for package/class naming (default: filename without `.dsp`). **Required** when processing multiple DSP files.
-- `-o output-dir` — Output directory (default: `packages/<name>-processor`)
+- `-o output-dir` — Output directory (default: `packages/<name>-nodes`)
 
 **Examples:**
 
 ```sh
-# Single DSP — generate packages/reverb-processor/
+# Single DSP — generate packages/reverb-nodes/
 npx faust2rnaa reverb.dsp
 
 # Single DSP with name override
@@ -48,7 +48,7 @@ npx faust2rnaa -n effects dsp/gain.dsp dsp/reverb.dsp
 1. Add it to your app's `package.json`:
    ```json
    "dependencies": {
-     "effects-processor": "file:packages/effects-processor"
+     "effects-nodes": "file:packages/effects-nodes"
    }
    ```
 
@@ -56,13 +56,13 @@ npx faust2rnaa -n effects dsp/gain.dsp dsp/reverb.dsp
    ```json
    "plugins": [
      "react-native-audio-api",
-     "effects-processor"
+     "effects-nodes"
    ]
    ```
 
 3. Import and use:
    ```typescript
-   import { GainNode, ReverbNode } from "effects-processor";
+   import { GainNode, ReverbNode } from "effects-nodes";
 
    // Create nodes — JSI globals are installed automatically on import
    const gain = new GainNode(context);
@@ -85,9 +85,9 @@ Given `reverb.dsp` (or `-n reverb`):
 
 | Derived name | Value |
 |---|---|
-| Package | `reverb-processor` |
+| Package | `reverb-nodes` |
 | Node class | `ReverbNode` |
-| Codegen name | `reverbprocessor` |
+| Codegen name | `reverbnodes` |
 | JSI factory | `createReverbNode` |
 
 ### Multiple DSPs
@@ -96,9 +96,9 @@ Given `-n effects dsp/` containing `gain.dsp` and `reverb.dsp`:
 
 | Derived name | Value |
 |---|---|
-| Package | `effects-processor` |
+| Package | `effects-nodes` |
 | Node classes | `GainNode`, `ReverbNode` |
-| Codegen name | `effectsprocessor` |
+| Codegen name | `effectsnodes` |
 | JSI factories | `createGainNode`, `createReverbNode` |
 
 Node names are derived from each DSP file's basename. The package name comes from `-n`.
@@ -106,14 +106,14 @@ Node names are derived from each DSP file's basename. The package name comes fro
 ### Output structure
 
 ```
-effects-processor/
+effects-nodes/
   shared/           # C++ core (per-DSP headers + AudioNode + JSI HostObject per node)
   ios/              # ObjC++ TurboModule bridge
   android/          # Gradle + CMake + Java package
   specs/            # TurboModule TypeScript spec
   src/              # TypeScript exports + typed node wrappers
   package.json
-  effects-processor.podspec
+  effects-nodes.podspec
   react-native.config.js
   app.plugin.js     # Expo CNG plugin for Android build ordering
 ```

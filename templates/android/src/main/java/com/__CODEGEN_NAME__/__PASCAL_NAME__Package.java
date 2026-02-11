@@ -1,4 +1,4 @@
-package com.__CODEGEN_NAME__;
+package com.faust2rnaa.__CODEGEN_NAME__;
 
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;

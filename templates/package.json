@@ -30,7 +30,7 @@
     "type": "modules",
     "jsSrcsDir": "specs",
     "android": {
-      "javaPackageName": "com.__CODEGEN_NAME__"
+      "javaPackageName": "com.faust2rnaa.__CODEGEN_NAME__"
     }
   }
 }

@@ -137,7 +137,7 @@ function generatedFileHeader(filename) {
 
 const dspName = nameOverride || dspFiles[0].dspBaseName;
 const kebab = toKebab(dspName);
-const packageName = kebab.endsWith("-processor") ? kebab : `${kebab}-processor`;
+const packageName = kebab.endsWith("-nodes") ? kebab : `${kebab}-nodes`;
 const pascalName = kebabToPascal(kebab);
 const codegenName = packageName.replace(/-/g, "");
 const namespace = codegenName;

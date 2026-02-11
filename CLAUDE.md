@@ -34,9 +34,9 @@ There is no build step, test suite, or linter configured. The tool is a single E
 
 All names derive from the input DSP filename (or `-n` override) through a chain of conversions. For `my_delay.dsp`:
 
-- kebab: `my-delay` → packageName: `my-delay-processor`
+- kebab: `my-delay` → packageName: `my-delay-nodes`
 - pascal: `MyDelay` → nodeName: `MyDelayNode`, dspClass: `MyDelayDsp`
-- codegen: `mydelayprocessor` (Java package, CMake target, C++ namespace)
+- codegen: `mydelaynodes` (Java package, CMake target, C++ namespace)
 - jsiFactory: `createMyDelayNode`
 
 The helpers `toKebab()`, `kebabToCamel()`, `kebabToPascal()` handle all case conversions.

@@ -28,7 +28,7 @@ void __NODE_NAME__::setParam(const std::string &name, double value) {
   fUI.setParamValue(name.c_str(), static_cast<FAUSTFLOAT>(value));
 }
 
-double __NODE_NAME__::getParam(const std::string &name) const {
+double __NODE_NAME__::getParam(const std::string &name) {
   return static_cast<double>(fUI.getParamValue(name.c_str()));
 }
 
@@ -36,7 +36,7 @@ int __NODE_NAME__::getParamCount() {
   return static_cast<int>(fUI.getFullpathMap().size());
 }
 
-std::string __NODE_NAME__::getParamAddress(int index) const {
+std::string __NODE_NAME__::getParamAddress(int index) {
   return fUI.getParamAddress(index);
 }
 

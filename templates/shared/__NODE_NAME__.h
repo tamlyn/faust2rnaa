@@ -18,9 +18,9 @@ class __NODE_NAME__ : public audioapi::AudioNode {
   explicit __NODE_NAME__(std::shared_ptr<audioapi::BaseAudioContext> context);
 
   void setParam(const std::string &name, double value);
-  double getParam(const std::string &name) const;
+  double getParam(const std::string &name);
   int getParamCount();
-  std::string getParamAddress(int index) const;
+  std::string getParamAddress(int index);
 
  protected:
   std::shared_ptr<audioapi::AudioBus> processNode(

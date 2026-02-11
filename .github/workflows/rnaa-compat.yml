@@ -1,0 +1,94 @@
+name: RNAA Compatibility
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 9 * * 1" # Monday 9am UTC
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install FAUST
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y faust
+
+      - name: Generate package from test fixture
+        run: node faust2rnaa.mjs -n test-synth -o test-output test/fixtures/test_synth.dsp
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-package
+          path: test-output/
+
+  check:
+    needs: generate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rnaa-version: ["0.11.0", "0.11.4"]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated-package
+          path: test-output/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          npm init -y
+          npm install react-native-audio-api@${{ matrix.rnaa-version }} react-native react typescript
+
+      - name: TypeScript check
+        run: |
+          cat > tsconfig.json << 'TSEOF'
+          {
+            "compilerOptions": {
+              "target": "ES2020",
+              "module": "ESNext",
+              "moduleResolution": "bundler",
+              "strict": true,
+              "noEmit": true,
+              "skipLibCheck": true,
+              "jsx": "react-native",
+              "types": ["react-native"]
+            },
+            "include": ["test-output/src/**/*.ts", "test-output/specs/**/*.ts"]
+          }
+          TSEOF
+          npx tsc --noEmit
+
+      - name: C++ syntax check
+        run: |
+          RNAA_INCLUDE=node_modules/react-native-audio-api/common/cpp
+          JSI_INCLUDE=node_modules/react-native/ReactCommon/jsi
+          RN_INCLUDE=node_modules/react-native/ReactCommon
+
+          for cpp in test-output/shared/*.cpp; do
+            # NativeAudioProcessingModule.cpp needs RN codegen headers we don't have
+            if [[ "$(basename "$cpp")" == "NativeAudioProcessingModule.cpp" ]]; then
+              echo "Skipping $(basename "$cpp") (needs RN codegen headers)"
+              continue
+            fi
+            echo "Checking $(basename "$cpp")..."
+            g++ -std=c++20 -fsyntax-only \
+              -I"$RNAA_INCLUDE" \
+              -I"$JSI_INCLUDE" \
+              -I"$RN_INCLUDE" \
+              -Itest-output/shared \
+              "$cpp"
+          done

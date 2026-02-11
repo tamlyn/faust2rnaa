@@ -2,6 +2,15 @@
 
 Compiles FAUST `.dsp` files into a complete [react-native-audio-api](https://github.com/software-mansion/react-native-audio-api) custom node package with Expo CNG support.
 
+## Compatibility
+
+[![RNAA Compatibility](https://github.com/tamlyn/faust2rnaa/actions/workflows/rnaa-compat.yml/badge.svg)](https://github.com/tamlyn/faust2rnaa/actions/workflows/rnaa-compat.yml)
+
+| react-native-audio-api | Status |
+|------------------------|--------|
+| 0.11.x                 | Tested in CI |
+| 0.10.x and earlier     | Not compatible |
+
 ## Prerequisites
 
 - [FAUST](https://faust.grame.fr/) compiler on your PATH

@@ -1,0 +1,36 @@
+{
+  "name": "__PACKAGE_NAME__",
+  "version": "0.1.0",
+  "description": "FAUST DSP processor for react-native-audio-api",
+  "main": "src/index.ts",
+  "react-native": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "shared",
+    "android",
+    "ios",
+    "app.plugin.js",
+    "__PACKAGE_NAME__.podspec",
+    "react-native.config.js",
+    "specs",
+    "src"
+  ],
+  "keywords": ["react-native", "audio", "turbo-module", "faust"],
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-audio-api": "*"
+  },
+  "devDependencies": {
+    "@expo/config-plugins": "^9.0.0"
+  },
+  "codegenConfig": {
+    "name": "__CODEGEN_NAME__",
+    "type": "modules",
+    "jsSrcsDir": "specs",
+    "android": {
+      "javaPackageName": "com.__CODEGEN_NAME__"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "faust2rnaa",
+  "version": "0.1.0",
+  "description": "Generate React Native Audio API custom processor packages from FAUST DSP files",
+  "type": "module",
+  "bin": {
+    "faust2rnaa": "./faust2rnaa.mjs"
+  },
+  "files": [
+    "faust2rnaa.mjs",
+    "rnaa.arch",
+    "templates/"
+  ],
+  "keywords": ["faust", "react-native", "audio", "dsp", "react-native-audio-api"],
+  "license": "MIT"
+}

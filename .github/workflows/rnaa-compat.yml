@@ -79,11 +79,14 @@ jobs:
           RN_INCLUDE=node_modules/react-native/ReactCommon
 
           for cpp in test-output/shared/*.cpp; do
-            # NativeAudioProcessingModule.cpp needs RN codegen headers we don't have
-            if [[ "$(basename "$cpp")" == "NativeAudioProcessingModule.cpp" ]]; then
-              echo "Skipping $(basename "$cpp") (needs RN codegen headers)"
-              continue
-            fi
+            case "$(basename "$cpp")" in
+              NativeAudioProcessingModule.cpp)
+                echo "Skipping $(basename "$cpp") (needs RN codegen headers)"
+                continue ;;
+              ProcessorInstaller.cpp)
+                echo "Skipping $(basename "$cpp") (needs RN TurboModule internals)"
+                continue ;;
+            esac
             echo "Checking $(basename "$cpp")..."
             g++ -std=c++20 -fsyntax-only \
               -I"$RNAA_INCLUDE" \

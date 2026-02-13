@@ -19,7 +19,7 @@ Compiles FAUST `.dsp` files into a complete [react-native-audio-api](https://git
 ## Usage
 
 ```sh
-npx faust2rnaa [-n name] [-o output-dir] <file.dsp | dir/ | file1.dsp file2.dsp ...>
+npx github:tamlyn/faust2rnaa [-n name] [-o output-dir] <file.dsp | dir/ | file1.dsp file2.dsp ...>
 ```
 
 **Options:**
@@ -31,16 +31,16 @@ npx faust2rnaa [-n name] [-o output-dir] <file.dsp | dir/ | file1.dsp file2.dsp 
 
 ```sh
 # Single DSP — generate packages/reverb-nodes/
-npx faust2rnaa reverb.dsp
+npx github:tamlyn/faust2rnaa reverb.dsp
 
 # Single DSP with name override
-npx faust2rnaa -n delay dsp/my_delay_effect.dsp
+npx github:tamlyn/faust2rnaa -n delay dsp/my_delay_effect.dsp
 
 # Directory of DSP files — one package with multiple nodes
-npx faust2rnaa -n effects dsp/
+npx github:tamlyn/faust2rnaa -n effects dsp/
 
 # Multiple DSP files explicitly
-npx faust2rnaa -n effects dsp/gain.dsp dsp/reverb.dsp
+npx github:tamlyn/faust2rnaa -n effects dsp/gain.dsp dsp/reverb.dsp
 ```
 
 ## Using a generated package

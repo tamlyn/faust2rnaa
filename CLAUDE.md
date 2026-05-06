@@ -62,7 +62,7 @@ Each generated package is a self-contained React Native TurboModule:
 
 ### Key design decisions
 
-- **In-place computation** (`-inpl` flag): FAUST `compute()` modifies buffers in-place, matching RNAA's AudioBus model
+- **In-place computation** (`-inpl` flag): FAUST `compute()` modifies buffers in-place, matching RNAA's `DSPAudioBuffer` model
 - **Self-contained headers** (`-i` flag): each DSP compiles to one header with all FAUST deps inlined — generated packages have no FAUST compile-time dependency
 - **String replacement over template engine**: simple `replaceAll` with zero dependencies
 - **Synchronous fs operations**: deliberate choice for CLI tool simplicity

@@ -6,7 +6,7 @@ namespace __NAMESPACE__ {
 
 __NODE_NAME__HostObject::__NODE_NAME__HostObject(
     const std::shared_ptr<__NODE_NAME__> &node)
-    : AudioNodeHostObject(node) {
+    : AudioNodeHostObject(node, __NODE_NAME__::defaultOptions()) {
   addFunctions(
       JSI_EXPORT_FUNCTION(__NODE_NAME__HostObject, setParam),
       JSI_EXPORT_FUNCTION(__NODE_NAME__HostObject, getParam),

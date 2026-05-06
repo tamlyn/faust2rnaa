@@ -337,12 +337,12 @@ function generateProcessorInstallerCpp() {
         [](facebook::jsi::Runtime &runtime, const facebook::jsi::Value &thisVal,
            const facebook::jsi::Value *args, size_t count) {
           auto object = args[0].getObject(runtime);
-          auto context =
+          auto contextHostObject =
               object.getHostObject<audioapi::BaseAudioContextHostObject>(
                   runtime);
-          if (context != nullptr) {
-            auto node =
-                std::make_shared<${namespace}::${n.nodeName}>(context->context_);
+          if (contextHostObject != nullptr) {
+            auto node = std::make_shared<${namespace}::${n.nodeName}>(
+                getContext(contextHostObject));
             auto nodeHostObject =
                 std::make_shared<${namespace}::${n.nodeName}HostObject>(node);
             return facebook::jsi::Object::createFromHostObject(
@@ -360,8 +360,27 @@ function generateProcessorInstallerCpp() {
 ${includes}
 
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
+#include <audioapi/core/BaseAudioContext.h>
 
 namespace ${namespace} {
+
+namespace {
+// BaseAudioContextHostObject::context_ is protected in
+// react-native-audio-api 0.12+, so we use a derived helper to expose it.
+// No instances of this class are ever constructed; it is only used as a
+// type lens for static_cast.
+class BaseAudioContextHostObjectAccessor
+    : public audioapi::BaseAudioContextHostObject {
+ public:
+  using audioapi::BaseAudioContextHostObject::context_;
+};
+
+inline std::shared_ptr<audioapi::BaseAudioContext> getContext(
+    const std::shared_ptr<audioapi::BaseAudioContextHostObject> &host) {
+  return static_cast<BaseAudioContextHostObjectAccessor *>(host.get())
+      ->context_;
+}
+} // namespace
 
 void InstallCustomProcessor(facebook::jsi::Runtime &runtime) {${factories}
 }

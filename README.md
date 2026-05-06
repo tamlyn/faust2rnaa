@@ -8,8 +8,8 @@ Compiles FAUST `.dsp` files into a complete [react-native-audio-api](https://git
 
 | react-native-audio-api | Status |
 |------------------------|--------|
-| 0.11.x                 | Tested in CI |
-| 0.10.x and earlier     | Not compatible |
+| 0.12.x                 | Tested in CI |
+| 0.11.x and earlier     | Not compatible |
 
 ## Prerequisites
 
@@ -130,4 +130,4 @@ Each DSP generates its own self-contained C++ header (e.g. `GainDsp.h`, `ReverbD
 5. Generates aggregate files: `ProcessorInstaller.cpp` (registers all JSI factory functions) and `src/index.ts` (exports all node classes)
 6. Generates typed TypeScript wrappers from the JSON metadata, with named getter/setter properties for each FAUST parameter
 
-The `-inpl` flag enables in-place computation, allowing `compute()` to use the same buffers for input and output. This matches RNAA's model where `processNode()` modifies the AudioBus in-place.
+The `-inpl` flag enables in-place computation, allowing `compute()` to use the same buffers for input and output. This matches RNAA's model where `processNode()` modifies the `DSPAudioBuffer` in-place.

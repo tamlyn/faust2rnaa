@@ -6,10 +6,11 @@ Compiles FAUST `.dsp` files into a complete [react-native-audio-api](https://git
 
 [![RNAA Compatibility](https://github.com/tamlyn/faust2rnaa/actions/workflows/rnaa-compat.yml/badge.svg)](https://github.com/tamlyn/faust2rnaa/actions/workflows/rnaa-compat.yml)
 
-| react-native-audio-api | Status |
-|------------------------|--------|
-| 0.12.x                 | Tested in CI |
-| 0.11.x and earlier     | Not compatible |
+| react-native-audio-api | faust2rnaa | Status |
+|------------------------|------------|--------|
+| 0.12.x                 | [v0.2.0](https://github.com/tamlyn/faust2rnaa/tree/v0.2.0) | Tested in CI |
+| 0.11.x                 | [v0.1.0](https://github.com/tamlyn/faust2rnaa/tree/v0.1.0) | No longer maintained |
+| 0.10.x and earlier     | —          | Not compatible |
 
 ## Prerequisites
 

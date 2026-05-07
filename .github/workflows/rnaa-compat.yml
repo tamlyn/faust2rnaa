@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rnaa-version: ["0.11.0", "0.11.4"]
+        rnaa-version: ["0.12.0", "0.12.1"]
     steps:
       - uses: actions/download-artifact@v4
         with:

@@ -6,10 +6,11 @@ Compiles FAUST `.dsp` files into a complete [react-native-audio-api](https://git
 
 [![RNAA Compatibility](https://github.com/tamlyn/faust2rnaa/actions/workflows/rnaa-compat.yml/badge.svg)](https://github.com/tamlyn/faust2rnaa/actions/workflows/rnaa-compat.yml)
 
-| react-native-audio-api | Status |
-|------------------------|--------|
-| 0.11.x                 | Tested in CI |
-| 0.10.x and earlier     | Not compatible |
+| react-native-audio-api | faust2rnaa | Status |
+|------------------------|------------|--------|
+| 0.12.x                 | [v0.2.0](https://github.com/tamlyn/faust2rnaa/tree/v0.2.0) | Tested in CI |
+| 0.11.x                 | [v0.1.0](https://github.com/tamlyn/faust2rnaa/tree/v0.1.0) | No longer maintained |
+| 0.10.x and earlier     | —          | Not compatible |
 
 ## Prerequisites
 
@@ -130,4 +131,4 @@ Each DSP generates its own self-contained C++ header (e.g. `GainDsp.h`, `ReverbD
 5. Generates aggregate files: `ProcessorInstaller.cpp` (registers all JSI factory functions) and `src/index.ts` (exports all node classes)
 6. Generates typed TypeScript wrappers from the JSON metadata, with named getter/setter properties for each FAUST parameter
 
-The `-inpl` flag enables in-place computation, allowing `compute()` to use the same buffers for input and output. This matches RNAA's model where `processNode()` modifies the AudioBus in-place.
+The `-inpl` flag enables in-place computation, allowing `compute()` to use the same buffers for input and output. This matches RNAA's model where `processNode()` modifies the `DSPAudioBuffer` in-place.

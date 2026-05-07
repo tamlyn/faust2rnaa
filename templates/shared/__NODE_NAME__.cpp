@@ -1,25 +1,35 @@
 #include "__NODE_NAME__.h"
 
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/utils/AudioArray.h>
-#include <audioapi/utils/AudioBus.h>
+
+#include <algorithm>
 
 namespace __NAMESPACE__ {
 using namespace audioapi;
 
-__NODE_NAME__::__NODE_NAME__(std::shared_ptr<BaseAudioContext> context)
-    : AudioNode(std::move(context)) {
+AudioNodeOptions __NODE_NAME__::defaultOptions() {
+  __DSP_CLASS__ tempDsp;
+  int numIn = tempDsp.getNumInputs();
+  int numOut = tempDsp.getNumOutputs();
+
+  AudioNodeOptions opts;
+  opts.numberOfInputs = numIn > 0 ? 1 : 0;
+  opts.numberOfOutputs = 1;
+  opts.channelCount = std::max({1, numIn, numOut});
+  opts.requiresTailProcessing = true;
+  return opts;
+}
+
+__NODE_NAME__::__NODE_NAME__(
+    const std::shared_ptr<BaseAudioContext> &context)
+    : AudioNode(context, defaultOptions()) {
   fDsp = std::make_unique<__DSP_CLASS__>();
 
-  auto ctx = context_.lock();
-  int sampleRate = ctx ? static_cast<int>(ctx->getSampleRate()) : 44100;
+  int sampleRate =
+      context ? static_cast<int>(context->getSampleRate()) : 44100;
 
   fDsp->init(sampleRate);
   fDsp->buildUserInterface(&fUI);
-
-  numberOfInputs_ = fDsp->getNumInputs() > 0 ? 1 : 0;
-  numberOfOutputs_ = 1;
-  channelCount_ = std::max(fDsp->getNumInputs(), fDsp->getNumOutputs());
 
   isInitialized_ = true;
 }
@@ -40,8 +50,8 @@ std::string __NODE_NAME__::getParamAddress(int index) {
   return fUI.getParamAddress(index);
 }
 
-std::shared_ptr<AudioBus> __NODE_NAME__::processNode(
-    const std::shared_ptr<AudioBus> &bus,
+std::shared_ptr<DSPAudioBuffer> __NODE_NAME__::processNode(
+    const std::shared_ptr<DSPAudioBuffer> &buffer,
     int framesToProcess) {
   int numInputs = fDsp->getNumInputs();
   int numOutputs = fDsp->getNumOutputs();
@@ -58,19 +68,19 @@ std::shared_ptr<AudioBus> __NODE_NAME__::processNode(
   std::vector<float *> inputs(numInputs);
   std::vector<float *> outputs(numOutputs);
 
-  int busChannels = bus->getNumberOfChannels();
+  int bufferChannels = static_cast<int>(buffer->getNumberOfChannels());
 
   for (int i = 0; i < numInputs; ++i) {
-    if (i < busChannels) {
-      inputs[i] = bus->getChannel(i)->getData();
+    if (i < bufferChannels) {
+      inputs[i] = buffer->getChannel(i)->begin();
     } else {
       inputs[i] = fSilenceBuffer.data();
     }
   }
 
   for (int i = 0; i < numOutputs; ++i) {
-    if (i < busChannels) {
-      outputs[i] = bus->getChannel(i)->getData();
+    if (i < bufferChannels) {
+      outputs[i] = buffer->getChannel(i)->begin();
     } else {
       outputs[i] = fSilenceBuffer.data();
     }
@@ -78,7 +88,7 @@ std::shared_ptr<AudioBus> __NODE_NAME__::processNode(
 
   fDsp->compute(framesToProcess, inputs.data(), outputs.data());
 
-  return bus;
+  return buffer;
 }
 
 } // namespace __NAMESPACE__

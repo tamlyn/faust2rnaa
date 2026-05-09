@@ -88,6 +88,23 @@ std::shared_ptr<DSPAudioBuffer> __NODE_NAME__::processNode(
 
   fDsp->compute(framesToProcess, inputs.data(), outputs.data());
 
+  // The FAUST DSP only writes to its own numOutputs channels (channel 0
+  // for a mono node). If the AudioNode's channel-count negotiation has
+  // promoted the bus past numOutputs (e.g. a mono node sitting on a
+  // stereo bus, which is the WAA default once any GainNode is involved),
+  // the extra buffer channels still hold the *pre-compute()* upstream
+  // input — i.e. the unprocessed signal. Without this mirror, those
+  // channels leak past the node and the destination's downmix averages
+  // them back in. Mirror channel 0's processed output into all extra
+  // buffer channels so the node's effect applies to the whole bus.
+  if (numOutputs > 0 && numOutputs < bufferChannels) {
+    const float *src = outputs[0];
+    for (int c = numOutputs; c < bufferChannels; ++c) {
+      float *dst = buffer->getChannel(c)->begin();
+      std::copy(src, src + framesToProcess, dst);
+    }
+  }
+
   return buffer;
 }
 

@@ -2,14 +2,17 @@
 
 import { execSync } from "node:child_process";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
   writeFileSync,
   rmSync,
   statSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
 const TOOLS_DIR = dirname(new URL(import.meta.url).pathname);
@@ -191,25 +194,32 @@ const packageReplacements = {
 
 // --- Extract parameters from FAUST JSON ---
 
-function extractParams(ui) {
-  const params = [];
+// Bargraphs are written by the DSP rather than read by it, so they cannot be
+// driven by an AudioParam. FaustParamCapture ignores them for the same reason.
+const OUTPUT_WIDGETS = new Set(["hbargraph", "vbargraph"]);
+
+function extractWidgets(ui) {
+  const widgets = [];
   for (const item of ui) {
     if (item.items) {
-      params.push(...extractParams(item.items));
+      widgets.push(...extractWidgets(item.items));
     } else if (item.address) {
-      params.push({
+      // FAUST declares no range for buttons or check buttons; both are gates
+      // the DSP reads as 0 or 1, which is what FaustParamCapture records.
+      const isGate = item.type === "button" || item.type === "checkbox";
+      widgets.push({
         label: item.label,
         shortname: item.shortname || item.label,
         address: item.address,
         type: item.type,
-        init: item.init,
-        min: item.min,
-        max: item.max,
+        init: isGate ? 0 : item.init,
+        min: isGate ? 0 : item.min,
+        max: isGate ? 1 : item.max,
         step: item.step,
       });
     }
   }
-  return params;
+  return widgets;
 }
 
 // --- Run FAUST for each node ---
@@ -217,26 +227,44 @@ function extractParams(ui) {
 const sharedDir = join(outputDir, "shared");
 mkdirSync(sharedDir, { recursive: true });
 
+// `faust -json` always writes <input>.json beside its input, whatever -o says,
+// so compile a copy in a temp directory instead: the user's source tree stays
+// clean and two concurrent runs on the same DSP cannot clobber each other's
+// JSON. -I keeps any relative imports resolving against the original location.
+const workDir = mkdtempSync(join(tmpdir(), "faust2rnaa-"));
+
 for (const node of nodes) {
-  const jsonFile = `${node.dspPath}.json`;
-  execSync(`faust -json "${node.dspPath}"`, { stdio: "pipe" });
+  const dspCopy = join(workDir, basename(node.dspPath));
+  copyFileSync(node.dspPath, dspCopy);
+  const importDir = dirname(node.dspPath);
+
+  const jsonFile = `${dspCopy}.json`;
+  execSync(`faust -I "${importDir}" -json "${dspCopy}"`, { stdio: "pipe" });
   if (!existsSync(jsonFile)) {
     console.error(`Expected JSON output at ${jsonFile}`);
     process.exit(1);
   }
   const faustJson = JSON.parse(readFileSync(jsonFile, "utf-8"));
-  rmSync(jsonFile);
 
-  node.params = extractParams(faustJson.ui);
+  const widgets = extractWidgets(faustJson.ui);
+  node.params = widgets.filter((w) => !OUTPUT_WIDGETS.has(w.type));
+  const outputs = widgets.filter((w) => OUTPUT_WIDGETS.has(w.type));
 
   console.log(`\n${node.nodeName}:`);
   console.log(
     `  Parameters: ${node.params.map((p) => p.shortname).join(", ") || "(none)"}`
   );
+  if (outputs.length > 0) {
+    console.log(
+      `  Skipped (bargraphs are DSP outputs, not controls): ${outputs
+        .map((p) => p.shortname)
+        .join(", ")}`
+    );
+  }
 
   const dspHeaderPath = join(sharedDir, `${node.dspClass}.h`);
   execSync(
-    `faust -i -inpl -a "${ARCH_FILE}" -cn ${node.dspClass} "${node.dspPath}" -o "${dspHeaderPath}"`,
+    `faust -I "${importDir}" -i -inpl -a "${ARCH_FILE}" -cn ${node.dspClass} "${dspCopy}" -o "${dspHeaderPath}"`,
     { stdio: "pipe" }
   );
   console.log(
@@ -418,47 +446,57 @@ writeFileSync(join(srcDir, "index.ts"), generateIndexTs());
 function generateNodeTs(node) {
   const { nodeName, jsiFactory, params } = node;
 
-  const interfaceProps = params
+  // Each FAUST control is exposed as an AudioParam, mirroring built-in nodes
+  // like GainNode (`node.cutoff.value = x`, `node.cutoff.setValueAtTime(...)`).
+  // The params are wrapped in the AudioParam class rather than handed over as
+  // the raw JSI host object, so that they carry the context that
+  // `AudioNode.connect` checks and validate scheduling arguments the same way
+  // a built-in node's params do.
+  const fields = params
     .map((p) => {
-      const prop = paramToPropertyName(p);
-      const jsdoc = `  /** ${p.type} — min: ${p.min}, max: ${p.max}, default: ${p.init}, step: ${p.step} */`;
-      return `${jsdoc}\n  ${prop}: number;`;
+      const facts = [
+        p.min != null && `min: ${p.min}`,
+        p.max != null && `max: ${p.max}`,
+        p.init != null && `default: ${p.init}`,
+        p.step != null && `step: ${p.step}`,
+      ].filter(Boolean);
+      const jsdoc = `  /** ${p.type}${facts.length ? ` — ${facts.join(", ")}` : ""} */`;
+      return `${jsdoc}\n  public readonly ${paramToPropertyName(p)}: AudioParam;`;
     })
+    .join("\n\n");
+
+  const assignments = params
+    .map(
+      (p) =>
+        `    this.${paramToPropertyName(p)} = new AudioParam(node.getAudioParam("${p.address}"), context);`
+    )
     .join("\n");
 
-  const gettersSetters = params
-    .map((p) => {
-      const prop = paramToPropertyName(p);
-      return `
-  public get ${prop}(): number {
-    return (this.node as I${nodeName}).getParam("${p.address}");
-  }
+  const constructorBody = params.length
+    ? `    super(context, ${jsiFactory}(context.context));
+    const node = this.node as I${nodeName};
+${assignments}`
+    : `    super(context, ${jsiFactory}(context.context));`;
 
-  public set ${prop}(value: number) {
-    (this.node as I${nodeName}).setParam("${p.address}", value);
-  }`;
-    })
-    .join("\n");
-
-  return generatedFileHeader(`${nodeName}.ts`) + `import { AudioNode, BaseAudioContext } from "react-native-audio-api";
+  return generatedFileHeader(`${nodeName}.ts`) + `import {
+  AudioNode,
+  AudioParam,
+  BaseAudioContext,
+} from "react-native-audio-api";
 import {
   IAudioNode,
+  IAudioParam,
   IBaseAudioContext,
 } from "react-native-audio-api/lib/typescript/interfaces";
 
 export interface I${nodeName} extends IAudioNode {
-  setParam(name: string, value: number): void;
-  getParam(name: string): number;
-  getParamCount(): number;
-  getParamAddress(index: number): string;
-${interfaceProps}
+  getAudioParam(name: string): IAudioParam;
 }
 
 export class ${nodeName} extends AudioNode {
-  constructor(context: BaseAudioContext) {
-    super(context, ${jsiFactory}(context.context));
+${fields ? fields + "\n\n" : ""}  constructor(context: BaseAudioContext) {
+${constructorBody}
   }
-${gettersSetters}
 }
 
 declare global {
@@ -470,5 +508,7 @@ declare global {
 for (const node of nodes) {
   writeFileSync(join(srcDir, `${node.nodeName}.ts`), generateNodeTs(node));
 }
+
+rmSync(workDir, { recursive: true, force: true });
 
 console.log(`\nDone`);

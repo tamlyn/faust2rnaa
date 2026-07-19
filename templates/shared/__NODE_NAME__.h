@@ -1,7 +1,9 @@
 #pragma once
 
 #include "__DSP_CLASS__.h"
+#include "FaustParamCapture.h"
 #include <audioapi/core/AudioNode.h>
+#include <audioapi/core/AudioParam.h>
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioBuffer.hpp>
 #include <memory>
@@ -19,10 +21,9 @@ class __NODE_NAME__ : public audioapi::AudioNode {
   explicit __NODE_NAME__(
       const std::shared_ptr<audioapi::BaseAudioContext> &context);
 
-  void setParam(const std::string &name, double value);
-  double getParam(const std::string &name);
-  int getParamCount();
-  std::string getParamAddress(int index);
+  // The AudioParam backing a FAUST control, looked up by its full address.
+  // Returns nullptr for an unknown address.
+  std::shared_ptr<audioapi::AudioParam> getAudioParam(const std::string &name);
 
   static audioapi::AudioNodeOptions defaultOptions();
 
@@ -33,7 +34,9 @@ class __NODE_NAME__ : public audioapi::AudioNode {
 
  private:
   std::unique_ptr<__DSP_CLASS__> fDsp;
-  MapUI fUI;
+  FaustParamCapture fUI;
+  // One AudioParam per captured FAUST control, parallel to fUI.params.
+  std::vector<std::shared_ptr<audioapi::AudioParam>> fAudioParams;
   std::vector<float> fSilenceBuffer;
 };
 

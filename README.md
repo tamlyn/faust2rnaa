@@ -67,16 +67,36 @@ npx github:tamlyn/faust2rnaa -n effects dsp/gain.dsp dsp/reverb.dsp
 
    // Create nodes — JSI globals are installed automatically on import
    const gain = new GainNode(context);
-   gain.gain = 0.8;
 
    const reverb = new ReverbNode(context);
-   reverb.wetDryMix = 0.5;
 
    // Connect: source → gain → reverb → destination
    source.connect(gain);
    gain.connect(reverb);
    reverb.connect(context.destination);
    ```
+
+   Each FAUST control is exposed as a Web Audio [`AudioParam`](https://developer.mozilla.org/en-US/docs/Web/API/AudioParam),
+   so values can be set immediately, scheduled over time, or driven by another node:
+
+   ```typescript
+   // Set immediately
+   gain.gain.value = 0.8;
+
+   // Or schedule changes on the audio timeline
+   const now = context.currentTime;
+   reverb.wetDryMix.setValueAtTime(0, now);
+   reverb.wetDryMix.linearRampToValueAtTime(0.5, now + 2);
+
+   // Or modulate with another node
+   lfo.connect(reverb.wetDryMix);
+   ```
+
+   Parameters are read once per render quantum (k-rate), which matches how FAUST
+   reads its controls, and are clamped to the range the DSP declared.
+
+   FAUST bargraphs are DSP outputs rather than controls, so they are not exposed;
+   the generator lists any it skipped.
 
 ## What it generates
 
@@ -129,6 +149,17 @@ Each DSP generates its own self-contained C++ header (e.g. `GainDsp.h`, `ReverbD
 3. Copies per-package template files from `templates/`, replacing `__PLACEHOLDER__` tokens with derived names
 4. Copies per-node template files once per DSP, generating the AudioNode and JSI HostObject C++ classes
 5. Generates aggregate files: `ProcessorInstaller.cpp` (registers all JSI factory functions) and `src/index.ts` (exports all node classes)
-6. Generates typed TypeScript wrappers from the JSON metadata, with named getter/setter properties for each FAUST parameter
+6. Generates typed TypeScript wrappers from the JSON metadata, exposing each FAUST control as a named `AudioParam`
 
 The `-inpl` flag enables in-place computation, allowing `compute()` to use the same buffers for input and output. This matches RNAA's model where `processNode()` modifies the `DSPAudioBuffer` in-place.
+
+## Development
+
+```sh
+npm test
+```
+
+The tests generate packages from the DSP files in `test/fixtures/` and assert on
+the output. The `FaustParamCapture` tests go further and compile the generated
+C++ against the system compiler, since that class needs no react-native-audio-api
+headers. Tests that need `faust` or a C++ compiler skip when they are absent.

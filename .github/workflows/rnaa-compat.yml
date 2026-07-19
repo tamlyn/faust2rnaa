@@ -23,8 +23,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y faust
 
-      - name: Generate package from test fixture
-        run: node faust2rnaa.mjs -n test-synth -o test-output test/fixtures/test_synth.dsp
+      - name: Run tests
+        run: npm test
+
+      - name: Generate package from test fixtures
+        run: node faust2rnaa.mjs -n test-kit -o test-output test/fixtures/
 
       - uses: actions/upload-artifact@v4
         with:

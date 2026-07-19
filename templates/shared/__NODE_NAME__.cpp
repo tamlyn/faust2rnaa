@@ -31,23 +31,26 @@ __NODE_NAME__::__NODE_NAME__(
   fDsp->init(sampleRate);
   fDsp->buildUserInterface(&fUI);
 
+  // Each FAUST control becomes an AudioParam, so its value can be scheduled
+  // over time (setValueAtTime, ramps, etc.). processNode() samples these
+  // once per render quantum and writes them into the DSP's zones.
+  for (const auto &p : fUI.params) {
+    fAudioParams.push_back(std::make_shared<AudioParam>(
+        static_cast<float>(p.init), static_cast<float>(p.min),
+        static_cast<float>(p.max), context));
+  }
+
   isInitialized_ = true;
 }
 
-void __NODE_NAME__::setParam(const std::string &name, double value) {
-  fUI.setParamValue(name.c_str(), static_cast<FAUSTFLOAT>(value));
-}
-
-double __NODE_NAME__::getParam(const std::string &name) {
-  return static_cast<double>(fUI.getParamValue(name.c_str()));
-}
-
-int __NODE_NAME__::getParamCount() {
-  return static_cast<int>(fUI.getFullpathMap().size());
-}
-
-std::string __NODE_NAME__::getParamAddress(int index) {
-  return fUI.getParamAddress(index);
+std::shared_ptr<AudioParam> __NODE_NAME__::getAudioParam(
+    const std::string &name) {
+  for (size_t i = 0; i < fUI.params.size(); ++i) {
+    if (fUI.params[i].address == name) {
+      return fAudioParams[i];
+    }
+  }
+  return nullptr;
 }
 
 std::shared_ptr<DSPAudioBuffer> __NODE_NAME__::processNode(
@@ -55,6 +58,25 @@ std::shared_ptr<DSPAudioBuffer> __NODE_NAME__::processNode(
     int framesToProcess) {
   int numInputs = fDsp->getNumInputs();
   int numOutputs = fDsp->getNumOutputs();
+
+  // Resolve any scheduled parameter automation for this block. This is
+  // k-rate: each AudioParam yields one value per render quantum, sampled at
+  // the block's start time, which FAUST then holds constant for the block.
+  if (!fAudioParams.empty()) {
+    auto context = context_.lock();
+    double time = context ? context->getCurrentTime() : 0.0;
+    for (size_t i = 0; i < fAudioParams.size(); ++i) {
+      const auto &param = fUI.params[i];
+      // Neither scheduled automation nor modulation from a connected node is
+      // bounded by the control's range, but FAUST compiles the DSP assuming
+      // its controls stay within it (1/freq, log(freq) and friends), so an
+      // out-of-range value can produce Inf or NaN that then sticks around in
+      // the DSP's recursive state. Clamp to the range FAUST declared.
+      float value = fAudioParams[i]->processKRateParam(framesToProcess, time);
+      *param.zone =
+          static_cast<FAUSTFLOAT>(std::clamp(value, param.min, param.max));
+    }
+  }
 
   // Ensure silence buffer is large enough
   if (static_cast<int>(fSilenceBuffer.size()) < framesToProcess) {

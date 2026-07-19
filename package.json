@@ -1,10 +1,13 @@
 {
   "name": "faust2rnaa",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Generate React Native Audio API custom processor packages from FAUST DSP files",
   "type": "module",
   "bin": {
     "faust2rnaa": "./faust2rnaa.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
   },
   "files": [
     "faust2rnaa.mjs",
